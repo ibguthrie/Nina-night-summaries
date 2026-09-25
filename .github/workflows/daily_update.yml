@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Execute Clean Media Injector
+      - name: Execute Top-Aligned Media Injector
         env:
           TZ: 'America/Los_Angeles'
         run: |
@@ -54,7 +54,7 @@ jobs:
           # Hardcoded baseline backup ID used if live feeds experience temporary drops
           video_id = "BhRsO0U6-r0" 
 
-          # 3. Pull from YouTube's official feed (immune to layout script blocking)
+          # 3. Pull from YouTube's official feed
           try:
               req = urllib.request.Request(FEED_URL, headers={'User-Agent': 'Mozilla/5.0'})
               with urllib.request.urlopen(req, timeout=15) as response:
@@ -75,28 +75,34 @@ jobs:
           except Exception as e:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
 
-          # 4. Generate the video player using rigid, cross-compatible HTML layout structures
+          # 4. Generate the video player and header text blocks
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px 0;\">\n"
-             f"    <iframe width=\"500\" height=\"500\" src=\"https://www.youtube.com/embed/{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
+             f"    <iframe width=\"500\" height=\"500\" src=\"https://youtube.com{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
               "</div>\n"
           )
 
-          # 5. PURGE PREVIOUS INJECTIONS: Erases duplicate stray banners or frames from previous test runs
+          # 5. PURGE CLEANUP: Erases all old or misplaced video instances from previous runs
           content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n*', '', content, flags=re.IGNORECASE)
           content = re.sub(r'<div align="center".*?</iframe>.*?</div>', '', content, flags=re.DOTALL | re.IGNORECASE)
           content = re.sub(r'<iframe width="500".*?</iframe>', '', content, flags=re.IGNORECASE)
 
-          # 6. Target and inject cleanly right above your Session Timeline section header
-          timeline_pattern = r'(##\s*Session Timeline)'
+          # 6. Target the top main title banner element to insert the video right underneath it
+          top_title_pattern = r'(#\s*Night\s*Summary\s*Report)'
 
-          if re.search(timeline_pattern, content, re.IGNORECASE):
-              content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video embedded cleanly via custom Markdown block filters.")
+          if re.search(top_title_pattern, content, re.IGNORECASE):
+              content = re.sub(top_title_pattern, f"\\1\n{iframe_markdown}", content, count=1, flags=re.IGNORECASE)
+              print("Success: Video embedded cleanly at the top of the summary page report.")
           else:
-              content += f"\n{iframe_markdown}"
-              print("Warning: Appended video player to page footer.")
+              # Absolute fallback to Session Timeline if main header shifts names
+              timeline_pattern = r'(##\s*Session Timeline)'
+              if re.search(timeline_pattern, content, re.IGNORECASE):
+                  content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
+                  print("Fallback: Embedded video above Session Timeline layout.")
+              else:
+                  content += f"\n{iframe_markdown}"
+                  print("Warning: Appended video player to page footer layout.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
