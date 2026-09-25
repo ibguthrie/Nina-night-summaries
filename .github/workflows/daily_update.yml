@@ -18,9 +18,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  update-summary:
+  # JOB 1: Modifies the HTML file and packages up the repository files
+  build-summary:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -86,7 +86,7 @@ jobs:
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px auto; display: block;\">\n"
-             f"    <iframe width=\"500\" height=\"500\" src=\"https://www.youtube.com/embed/{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
+             f"    <iframe width=\"500\" height=\"500\" src=\"https://youtube.com{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
               "</div>\n"
           )
 
@@ -114,14 +114,22 @@ jobs:
           EOF
           python inline_run.py
 
-      # Step 5: Native GitHub Pages deployment tasks (Bypasses Git branch loops entirely)
       - name: Setup Pages Settings Environments
         uses: actions/configure-pages@v5
 
       - name: Compile and Upload Deployment Artifacts
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # Uploads everything directly from your current workspace root layout
+          path: '.'
 
+  # JOB 2: Direct secure pipeline environment link to your live site
+  deploy-summary:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-summary
+    steps:
       - name: Force Instant Live Update to GitHub Pages Website URL
+        id: deployment
         uses: actions/deploy-pages@v4
