@@ -6,12 +6,19 @@ on:
     - cron: '30 16 * * *'
   workflow_dispatch: # Allows manual force testing right from the Actions UI window
 
-jobs:
-  update-summary:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+# Explicit permissions required to bypass git commits and push code directly to your site URL
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,7 +34,6 @@ jobs:
           import re
           import os
 
-          # 1. Base Configuration Paths
           HTML_FILE = 'NightSummary/NightSummary.html'
 
           if not os.path.exists(HTML_FILE):
@@ -40,11 +46,11 @@ jobs:
           # Standardize Windows carriage returns to clean line breaks
           content = content.replace('\r\n', '\n')
 
-          # 2. FIXED STATIC PARAMETERS: Bypasses XML feed processing to ensure absolute uptime
+          # FIXED STATIC PARAMETERS: Standardized video ID and Title tracking attributes
           video_id = "BhRsO0U6-r0" 
           expected_title = "Death Valley Observatory Timelapse 2026-09-25"
 
-          # 3. FIXED EMBED PATH STRUCT: Explicitly includes the required forward slashes
+          # FIXED EMBED PATH STRUCT: Explicitly includes working forward slash directories
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px 0;\">\n"
@@ -52,11 +58,10 @@ jobs:
               "</div>\n"
           )
 
-          # 4. ROBUST LAYOUT MATCH FILTER: Finds the phrase 'Session Timeline' inside ANY HTML or Markdown tags
+          # ROBUST LAYOUT MATCH FILTER: Finds the phrase 'Session Timeline' inside ANY HTML or Markdown tags
           timeline_pattern = r'([^\n]*Session\s+Timeline[^\n]*)'
 
           if re.search(timeline_pattern, content, re.IGNORECASE):
-              # Slide the working video block exactly right above the detected timeline string
               content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
               print("Success: Video embedded cleanly right above your Session Timeline header graphics.")
           else:
@@ -66,10 +71,13 @@ jobs:
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
 
-      - name: Commit and Push changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@://github.com"
-          git add NightSummary/NightSummary.html
-          git commit -m "Automated update: Fixed embed link and correctly aligned video framework" || echo "No changes detected"
-          git push
+      - name: Setup Pages Settings Environments
+        uses: actions/configure-pages@v5
+
+      - name: Compile and Upload Deployment Artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Force Instant Live Update to GitHub Pages Website URL
+        uses: actions/deploy-pages@v4
