@@ -42,7 +42,7 @@ jobs:
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
               content = file.read()
 
-          # Standardize Windows carriage returns to clean line breaks
+          # Convert Windows \r\n to clean standard \n breaks
           content = content.replace('\r\n', '\n')
 
           # 2. Extract Session Date from N.I.N.A HTML text layout string
@@ -68,22 +68,24 @@ jobs:
                           print(f"Target Resolved: {vid_title} -> {video_id}")
                           break
                   else:
-                      video_id = matches
-                      expected_title = matches
+                      video_id = matches[0][0]
+                      expected_title = matches[0][1]
                       print(f"Date variance detected. Using latest upload fallback: {expected_title} -> {video_id}")
           except Exception as e:
               print(f"Scraping encounter error: {e}. Utilizing backup verification anchor ID.")
 
           # PURE MARKDOWN IMAGE LINK CARD LAYOUT: Completely bypasses HTML iframe blocking
+          # FIXED URL PATH STRUCTURE: Uses standard formatted slashes to prevent empty image boxes
           markdown_card = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               f"[![{expected_title}](https://youtube.com{video_id}/hqdefault.jpg)](https://youtube.com{video_id})\n"
               f"\n*{expected_title} (Click image above to play video)*\n"
           )
 
-          # 3. COMPLETE PURGE SANITIZATION: Wipes out all duplicate stray lines left behind from previous tests
+          # 3. COMPLETE GLOBAL SCRUB CLEANUP: Wipes out ALL duplicate text strings anywhere in the document
           content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View.*?\n', '', content, flags=re.IGNORECASE)
           content = re.sub(r'\[Death Valley.*?\]\(https.*?\)\n*', '', content, flags=re.IGNORECASE)
+          content = re.sub(r'\[Death Valley.*?\]https.*?\n*', '', content, flags=re.IGNORECASE)
           content = re.sub(r'\*Death Valley Observatory.*?\*\n*', '', content, flags=re.IGNORECASE)
           content = re.sub(r'<div align="center".*?</iframe>.*?</div>\n*', '', content, flags=re.DOTALL | re.IGNORECASE)
           content = re.sub(r'<iframe width="500".*?</iframe>\n*', '', content, flags=re.IGNORECASE)
@@ -95,7 +97,6 @@ jobs:
               content = re.sub(keyword_pattern, f"\\1\n{markdown_card}", content, count=1, flags=re.IGNORECASE)
               print("Success: Video link card embedded cleanly right beneath your report title banner.")
           else:
-              # Secondary fail-safe backstop targets the timeline block
               timeline_pattern = r'(##\s*Session Timeline)'
               if re.search(timeline_pattern, content, re.IGNORECASE):
                   content = re.sub(timeline_pattern, f"{markdown_card}\n\\1", content, count=1, flags=re.IGNORECASE)
