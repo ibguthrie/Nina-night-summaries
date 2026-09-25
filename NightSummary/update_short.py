@@ -5,11 +5,11 @@ from datetime import datetime
 
 # 1. Configuration
 # !!! MAKE SURE TO UPDATE YOUR CHANNEL ID HERE !!!
-CHANNEL_ID = '@bguthrie' 
+CHANNEL_ID = 'YOUR_CHANNEL_ID_HERE' 
 HTML_FILE = 'NightSummary.html'
 FEED_URL = f'https://youtube.com{CHANNEL_ID}'
 
-# 2. Generate expected title using today's date (e.g., "Death Valley Observatory Timelapse 2026-09-25")
+# 2. Generate expected title using today's local date (e.g., "Death Valley Observatory Timelapse 2026-09-25")
 today_str = datetime.now().strftime('%Y-%m-%d')
 expected_title = f"Death Valley Observatory Timelapse {today_str}"
 print(f"Searching YouTube feed for: '{expected_title}'")
@@ -58,18 +58,28 @@ def inject_into_html(video_id):
     with open(HTML_FILE, 'r', encoding='utf-8') as file:
         content = file.read()
 
-    # Strategy: Find the opening <body> tag and place the video right after it
-    body_pattern = r'(<body[^>]*>)'
+    # Strategy: Find 'Session Timeline' inside an HTML tag and capture the tag opening
+    # This matches scenarios like: <h2>Session Timeline</h2>, <p>Session Timeline</p>, etc.
+    timeline_pattern = r'(<[^>]+>\s*Session Timeline\s*</[^>]+>)'
     
-    if re.search(body_pattern, content, re.IGNORECASE):
-        # Insert the iframe code immediately after the <body> tag opens
-        updated_content = re.sub(body_pattern, f"\\1\n{iframe_code}", content, count=1, flags=re.IGNORECASE)
+    if re.search(timeline_pattern, content, re.IGNORECASE):
+        # Insert the iframe code immediately BEFORE the matched Session Timeline tag element
+        updated_content = re.sub(timeline_pattern, f"{iframe_code}\n\\1", content, count=1, flags=re.IGNORECASE)
         
         with open(HTML_FILE, 'w', encoding='utf-8') as file:
             file.write(updated_content)
-        print(f"Successfully injected Short (ID: {video_id}) into the fresh HTML file.")
+        print(f"Successfully injected Short right before the 'Session Timeline' section.")
     else:
-        print("Error: Could not find a <body> tag in the generated HTML file.")
+        # Fallback safety: If 'Session Timeline' isn't found, look for the closing </body> tag instead
+        print("Warning: Could not find exact 'Session Timeline' text structure. Trying </body> fallback...")
+        body_close_pattern = r'(</body>)'
+        if re.search(body_close_pattern, content, re.IGNORECASE):
+            updated_content = re.sub(body_close_pattern, f"{iframe_code}\n\\1", content, count=1, flags=re.IGNORECASE)
+            with open(HTML_FILE, 'w', encoding='utf-8') as file:
+                file.write(updated_content)
+            print("Successfully placed the Short at the bottom of the page as a fallback.")
+        else:
+            print("Error: Could not find structural entry points in the HTML file.")
 
 if __name__ == '__main__':
     target_video_id = find_video_id_by_title()
