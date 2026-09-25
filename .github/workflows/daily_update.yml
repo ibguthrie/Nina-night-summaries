@@ -6,11 +6,20 @@ on:
     - cron: '30 16 * * *'
   workflow_dispatch: # Allows manual force testing right from the Actions UI window
 
+# Permissions required to bypass git commits and push code directly to the live environment layout
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Prevents system lock conflicts if multiple automated workflows run concurrently
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
   update-summary:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout repository
@@ -31,7 +40,6 @@ jobs:
           import os
           from datetime import datetime
 
-          # 1. Base Paths Configuration
           HTML_FILE = 'NightSummary/NightSummary.html'
           SHORTS_URL = 'https://youtube.com'
 
@@ -42,24 +50,23 @@ jobs:
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
               content = file.read()
 
-          # Convert Windows \r\n to clean standard \n breaks
+          # Standardize Windows carriage returns to clean line breaks
           content = content.replace('\r\n', '\n')
 
-          # 2. Extract Session Date from N.I.N.A HTML text layout string
+          # Extract Session Date from N.I.N.A HTML text layout string
           date_match = re.search(r'\*\*Session Date:\*\*\s*([0-9]{4}-[0-9]{2}-[0-9]{2})', content)
           session_date = date_match.group(1) if date_match else datetime.now().strftime('%Y-%m-%d')
           expected_title = f"Death Valley Observatory Timelapse {session_date}"
           
-          # BULLETPROOF FALLBACK: A verified video ID used if scraping fails
+          # Verified video fallback ID
           video_id = "BhRsO0U6-r0" 
 
-          # 3. Pull video ID directly from your public Shorts list layout page
+          # Pull video ID directly from your public Shorts list layout page
           try:
               req = urllib.request.Request(SHORTS_URL, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
               with urllib.request.urlopen(req, timeout=15) as response:
                   page_html = response.read().decode('utf-8')
               
-              # Find matching titles and grab their video IDs
               matches = re.findall(r'"videoId":"([^"]+)","title":\{"runs":\[\{"text":"([^"]+)"\}', page_html)
               if matches:
                   for vid_id, vid_title in matches:
@@ -69,52 +76,52 @@ jobs:
                           print(f"Target Resolved: {vid_title} -> {video_id}")
                           break
                   else:
-                      # Fallback to the newest video on your channel if the explicit date isn't found yet
                       video_id = matches[0][0]
                       expected_title = matches[0][1]
-                      print(f"Date mismatch. Using newest upload fallback: {expected_title} -> {video_id}")
+                      print(f"Date variance detected. Using latest upload hook: {expected_title} -> {video_id}")
           except Exception as e:
               print(f"Scraping encounter error: {e}. Utilizing backup verification anchor ID.")
 
-          # 4. Generate the video player and header text blocks
+          # Generate the clean iframe layout container using native HTML block dimensions
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
-              "<div align=\"center\" style=\"margin: 25px 0;\">\n"
-             f"    <iframe width=\"500\" height=\"500\" src=\"https://youtube.com{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
+              "<div align=\"center\" style=\"margin: 25px auto; display: block;\">\n"
+             f"    <iframe width=\"500\" height=\"500\" src=\"https://www.youtube.com/embed/{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
               "</div>\n"
           )
 
-          # 5. PURGE CLEANUP: Erases old or misplaced video instances from previous runs
+          # PURGE CLEANUP: Strips previous test remnants to keep your layout crisp
           content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n*', '', content, flags=re.IGNORECASE)
           content = re.sub(r'<div align="center".*?</iframe>.*?</div>', '', content, flags=re.DOTALL | re.IGNORECASE)
           content = re.sub(r'<iframe width="500".*?</iframe>', '', content, flags=re.IGNORECASE)
 
-          # 6. Target the top main title banner element to insert the video right underneath it
-          # Flexible match pattern fixes line-break spacing issues
+          # Find your primary document header and inject right beneath it
           top_title_pattern = r'(#\s+Night\s+Summary\s+Report\s*\n)'
 
           if re.search(top_title_pattern, content, re.IGNORECASE):
               content = re.sub(top_title_pattern, f"\\1{iframe_markdown}", content, count=1, flags=re.IGNORECASE)
               print("Success: Video embedded cleanly at the top of the summary page report.")
           else:
-              # Fallback to Session Timeline if the main header is missing
               timeline_pattern = r'(##\s*Session Timeline)'
               if re.search(timeline_pattern, content, re.IGNORECASE):
                   content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
                   print("Fallback: Embedded video above Session Timeline layout.")
               else:
                   content += f"\n{iframe_markdown}"
-                  print("Warning: Appended video player to page footer layout.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
           EOF
           python inline_run.py
 
-      - name: Commit and Push changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@://github.com"
-          git add NightSummary/NightSummary.html
-          git commit -m "Automated update: Embedded latest YouTube Short [skip ci]" || echo "No changes detected"
-          git push
+      # Step 5: Native GitHub Pages deployment tasks (Bypasses Git branch loops entirely)
+      - name: Setup Pages Settings Environments
+        uses: actions/configure-pages@v5
+
+      - name: Compile and Upload Deployment Artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # Uploads everything directly from your current workspace root layout
+
+      - name: Force Instant Live Update to GitHub Pages Website URL
+        uses: actions/deploy-pages@v4
