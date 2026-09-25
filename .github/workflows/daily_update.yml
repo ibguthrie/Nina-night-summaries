@@ -1,3 +1,4 @@
+yaml
 name: Daily YouTube Short Update
 
 on:
@@ -75,23 +76,24 @@ jobs:
           except Exception as e:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
 
-          # 4. PURE MARKDOWN IMAGE LINK CARD LAYOUT: Completely bypasses HTML iframe blocking restrictions
-          # Uses standard formatting brackets to deliver an unblockable, working video destination path
+          # 4. Generate the video player using rigid, cross-compatible HTML layout structures
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
-              f"[![{expected_title}](https://youtube.com{video_id}/0.jpg)](https://youtube.com{video_id})\n"
-              f"\n*{expected_title} (Click thumbnail block above to play timelapse video)*\n"
+              "<div align=\"center\" style=\"margin: 25px 0;\">\n"
+             f"    <iframe width=\"500\" height=\"500\" src=\"https://www.youtube.com/embed/{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
+              "</div>\n"
           )
 
-          # 5. SAFE POSITION FIX: Handles trailing spaces up to the end of the line ($) without hanging
-          timeline_pattern = r'(##\s*Session\s+Timeline\s*$)'
 
-          if re.search(timeline_pattern, content, re.M | re.I):
-              content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.M | re.I)
-              print("Success: Video link card embedded cleanly right above your Session Timeline segment.")
+          # 5. Target and inject cleanly right above your Session Timeline section header
+          timeline_pattern = r'(##\s*Session Timeline)'
+
+          if re.search(timeline_pattern, content, re.IGNORECASE):
+              content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
+              print("Success: Video embedded cleanly via custom Markdown block filters.")
           else:
               content += f"\n{iframe_markdown}"
-              print("Warning: Appended video element to page footer.")
+              print("Warning: Appended video player to page footer.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
