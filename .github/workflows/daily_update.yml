@@ -39,7 +39,7 @@ jobs:
           from datetime import datetime
 
           HTML_FILE = 'NightSummary/NightSummary.html'
-          SHORTS_URL = 'https://www.youtube.com/@bguthrie/shorts'
+          SHORTS_URL = 'https://youtube.com'
 
           if not os.path.exists(HTML_FILE):
               print(f"CRITICAL ERROR: '{HTML_FILE}' missing.")
@@ -48,7 +48,7 @@ jobs:
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
               content = file.read()
 
-          # Standardize Windows carriage returns to clean line breaks
+          # Convert Windows \r\n to clean standard \n breaks
           content = content.replace('\r\n', '\n')
 
           # Extract Session Date from N.I.N.A HTML text layout string
@@ -80,32 +80,34 @@ jobs:
           except Exception as e:
               print(f"Scraping encounter error: {e}. Utilizing backup verification anchor ID.")
 
-          # PURE MARKDOWN PLAYER LAYOUT: Bypasses standard HTML blocks to satisfy theme filter constraints
-          iframe_markdown = (
+          # PURE MARKDOWN IMAGE LINK CARD LAYOUT: Completely bypasses HTML iframe blocking
+          # Uses YouTube's official HQ image thumbnail endpoint
+          markdown_card = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
-              f'[{expected_title}](https://youtube.com{video_id})\n\n'
-              f'<iframe width="500" height="500" src="https://youtube.com{video_id}" title="{expected_title}" frameborder="0" style="display: block; margin: 25px auto; max-width: 100%;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n'
+              f"[![{expected_title}](https://youtube.com{video_id}/hqdefault.jpg)](https://youtube.com{video_id})\n"
+              f"\n*{expected_title} (Click image link above to play video)*\n"
           )
 
           # PURGE CLEANUP: Strips previous test remnants to keep your layout crisp
           content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n*', '', content, flags=re.IGNORECASE)
           content = re.sub(r'<div align="center".*?</iframe>.*?</div>', '', content, flags=re.DOTALL | re.IGNORECASE)
           content = re.sub(r'<iframe width="500".*?</iframe>', '', content, flags=re.IGNORECASE)
+          content = re.sub(r'\[Death Valley.*?\]https.*?', '', content, flags=re.IGNORECASE)
+          content = re.sub(r'\*Death Valley Observatory.*?\*', '', content, flags=re.IGNORECASE)
 
           # Target the primary `# Night Summary Report` title block syntax used by N.I.N.A
           top_title_pattern = r'(#\s+Night\s+Summary\s+Report)'
 
           if re.search(top_title_pattern, content, re.IGNORECASE):
-              content = re.sub(top_title_pattern, f"\\1\n{iframe_markdown}", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video embedded cleanly at the top of your report file summary layout.")
+              content = re.sub(top_title_pattern, f"\\1\n{markdown_card}", content, count=1, flags=re.IGNORECASE)
+              print("Success: Video link card embedded cleanly at the top of your report.")
           else:
               timeline_pattern = r'(##\s*Session Timeline)'
               if re.search(timeline_pattern, content, re.IGNORECASE):
-                  content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
-                  print("Fallback: Embedded video above Session Timeline layout.")
+                  content = re.sub(timeline_pattern, f"{markdown_card}\n\\1", content, count=1, flags=re.IGNORECASE)
+                  print("Fallback: Embedded link card above Session Timeline.")
               else:
-                  content += f"\n{iframe_markdown}"
-                  print("Warning: Missing all layout indicators. Attached video container to page footer.")
+                  content += f"\n{markdown_card}"
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
@@ -115,7 +117,7 @@ jobs:
       - name: Save Modified File Back to History Tracking
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "github-actions[bot]@://github.com"
           git add NightSummary/NightSummary.html
           git commit -m "Automated update: Embedded latest YouTube Short [skip ci]" || echo "No changes detected"
           git push || echo "Push skipped or unneeded"
