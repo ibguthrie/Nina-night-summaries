@@ -41,19 +41,21 @@ def inject_into_html(video_id):
         print("Skipping HTML update because no matching video was found.")
         return
         
-    # Standard responsive video embed layout
+    # Responsive square layout (1:1 ratio) optimized for 500x500px on desktop
     iframe_code = f"""
-    <!-- Automated YouTube Short Insertion -->
+    <!-- Automated YouTube Square Video Insertion -->
     <div style="display: flex; justify-content: center; margin: 20px 0;">
-        <iframe width="315" height="560" 
+        <iframe width="500" height="500" 
             src="https://youtube.com{video_id}" 
             title="{expected_title}" 
             frameborder="0" 
+            style="max-width: 100%; aspect-ratio: 1 / 1;"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
             allowfullscreen>
         </iframe>
     </div>
     """
+
 
     with open(HTML_FILE, 'r', encoding='utf-8') as file:
         content = file.read()
