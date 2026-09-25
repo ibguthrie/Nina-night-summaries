@@ -1,33 +1,37 @@
-name: Daily HTML Update
+name: Daily YouTube Short Update
 
 on:
   schedule:
-    # This cron schedule runs every day at 12:00 AM UTC
+    # Runs everyday at 8:30 AM UTC
     - cron: '30 8 * * *'
-  workflow_dispatch: # Allows you to also trigger it manually from the GitHub UI
+  workflow_dispatch: # Allows you to force run it manually whenever you want
 
 jobs:
-  update-file:
+  update-summary:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed to allow the action to push changes back to the repo
+      contents: write
 
     steps:
-      # Step 1: Check out the repository code
+      # Step 1: Get code from your repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Make changes to the HTML file
-      # This example uses basic bash 'sed' to replace a placeholder text with the current date
-      - name: Modify HTML file
-        run: |
-          sed -i "s/LAST_UPDATED_PLACEHOLDER/$(date)/g" NightSummary.html
+      # Step 2: Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-python-version: '3.10'
 
-      # Step 3: Commit and push the changes back to GitHub
+      # Step 3: Execute the script to modify the HTML file
+      - name: Run Short parser script
+        run: python update_short.py
+
+      # Step 4: Commit adjustments back into the repository
       - name: Commit and Push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git commit -m "Automated daily HTML update [skip ci]" || echo "No changes to commit"
+          git add NightSummary.html
+          git commit -m "Automated update: Embedded latest YouTube Short [skip ci]" || echo "No changes detected"
           git push
