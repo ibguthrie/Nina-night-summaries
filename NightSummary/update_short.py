@@ -10,7 +10,7 @@ HTML_FILE = 'NightSummary.html'
 FEED_URL = f'https://youtube.com{CHANNEL_ID}'
 
 # 2. Generate expected title using today's date (e.g., "Death Valley Observatory Timelapse 2026-09-25")
-today_str = datetime.utcnow().strftime('%Y-%m-%d')
+today_str = datetime.now().strftime('%Y-%m-%d')
 expected_title = f"Death Valley Observatory Timelapse {today_str}"
 print(f"Searching YouTube feed for: '{expected_title}'")
 
