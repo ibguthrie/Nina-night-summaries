@@ -32,13 +32,14 @@ jobs:
           import os
           from datetime import datetime
 
-          # 1. Direct System Configuration
+          # 1. Fixed Configuration Pathing for your subfolder structure
           CHANNEL_ID = 'UCf-B3Rnd2W_vHn2_iRbe_9A' 
-          HTML_FILE = 'NightSummary.html'
+          HTML_FILE = 'NightSummary/NightSummary.html'
           FEED_URL = f'https://youtube.com{CHANNEL_ID}'
 
           if not os.path.exists(HTML_FILE):
-              print(f"CRITICAL ERROR: '{HTML_FILE}' was not found in workspace.")
+              print(f"CRITICAL PATH ERROR: '{HTML_FILE}' was not found in your repository branches.")
+              print(f"Current workspace files layout shows: {os.listdir('.')}")
               exit(0)
 
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
@@ -108,6 +109,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@://github.com"
-          git add NightSummary.html
+          git add NightSummary/NightSummary.html
           git commit -m "Automated update: Embedded latest YouTube Short [skip ci]" || echo "No changes detected"
           git push
