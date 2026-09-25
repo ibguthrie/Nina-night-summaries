@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Execute Clean Markdown Injector
+      - name: Execute Resilient Media Aligner
         env:
           TZ: 'America/Los_Angeles'
         run: |
@@ -36,7 +36,7 @@ jobs:
           SHORTS_URL = 'https://youtube.com'
 
           if not os.path.exists(HTML_FILE):
-              print(f"CRITICAL ERROR: '{HTML_FILE}' missing.")
+              print(f"CRITICAL ERROR: '{HTML_FILE}' missing from workspace.")
               exit(0)
 
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
@@ -88,19 +88,16 @@ jobs:
           content = re.sub(r'\[Death Valley.*?\]https.*?', '', content, flags=re.IGNORECASE)
           content = re.sub(r'\*Death Valley Observatory.*?\*', '', content, flags=re.IGNORECASE)
 
-          # Target the primary `# Night Summary Report` title block syntax used by N.I.N.A
-          top_title_pattern = r'(#\s+Night\s+Summary\s+Report)'
+          # BROAD SEARCH FIX: Finds the FIRST header element block at the very top of your file
+          top_title_pattern = r'(#\s+.*?\n)'
 
-          if re.search(top_title_pattern, content, re.IGNORECASE):
-              content = re.sub(top_title_pattern, f"\\1\n{markdown_card}", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video link card embedded cleanly at the top of your report.")
+          if re.search(top_title_pattern, content):
+              content = re.sub(top_title_pattern, f"\\1{markdown_card}", content, count=1)
+              print("Success: Video link card embedded cleanly right under the top layout header.")
           else:
-              timeline_pattern = r'(##\s*Session Timeline)'
-              if re.search(timeline_pattern, content, re.IGNORECASE):
-                  content = re.sub(timeline_pattern, f"{markdown_card}\n\\1", content, count=1, flags=re.IGNORECASE)
-                  print("Fallback: Embedded link card above Session Timeline.")
-              else:
-                  content += f"\n{markdown_card}"
+              # Fallback to absolute file top if pattern match checks fail
+              content = markdown_card + content
+              print("Fallback: Added video card to the absolute top lines of your document.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
@@ -110,7 +107,7 @@ jobs:
       - name: Save Modified File Back to History Tracking
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@://github.com"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add NightSummary/NightSummary.html
-          git commit -m "Automated update: Embedded latest YouTube Short [skip ci]" || echo "No changes detected"
-          git push || echo "Push skipped or unneeded"
+          git commit -m "Automated update: Embedded latest YouTube Short [skip ci]"
+          git push
