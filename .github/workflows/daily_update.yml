@@ -31,7 +31,7 @@ jobs:
           import os
           from datetime import datetime
 
-          # 1. Base Configuration Paths (YOUR WORKING FEED SYSTEM VERBATIM)
+          # 1. Base Configuration Paths
           HTML_FILE = 'NightSummary/NightSummary.html'
           CHANNEL_ID = 'UCf-B3Rnd2W_vHn2_iRbe_9A'
           FEED_URL = f'https://youtube.com{CHANNEL_ID}'
@@ -54,7 +54,7 @@ jobs:
           # Hardcoded baseline backup ID used if live feeds experience temporary drops
           video_id = "BhRsO0U6-r0" 
 
-          # 3. Pull from YouTube's official feed (YOUR WORKING DISCOVERY SYSTEM VERBATIM)
+          # 3. Pull from YouTube's official feed (immune to layout script blocking)
           try:
               req = urllib.request.Request(FEED_URL, headers={'User-Agent': 'Mozilla/5.0'})
               with urllib.request.urlopen(req, timeout=15) as response:
@@ -75,7 +75,7 @@ jobs:
           except Exception as e:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
 
-          # 4. Generate the video player using rigid, cross-compatible HTML layout structures (YOUR WORKING PLAYER VERBATIM)
+          # 4. Generate the video player using rigid, cross-compatible HTML layout structures
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px 0;\">\n"
@@ -88,15 +88,21 @@ jobs:
           content = re.sub(r'<div align="center".*?</iframe>.*?</div>', '', content, flags=re.DOTALL | re.IGNORECASE)
           content = re.sub(r'<iframe width="500".*?</iframe>', '', content, flags=re.IGNORECASE)
 
-          # 6. HIGH-FLEXIBILITY TARGETING FIX: Matches 'Session Timeline' even with unexpected spaces at the end of the line
-          timeline_pattern = r'(##\s*Session\s+Timeline[^\n]*)'
+          # 6. TARGETING CHANGE ONLY: Locate the main title header at the top of the report file
+          top_title_pattern = r'(#\s+Night\s+Summary\s+Report)'
 
-          if re.search(timeline_pattern, content, re.IGNORECASE):
-              content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video embedded cleanly right above your Session Timeline header graphics.")
+          if re.search(top_title_pattern, content, re.IGNORECASE):
+              content = re.sub(top_title_pattern, f"\\1\n{iframe_markdown}", content, count=1, flags=re.IGNORECASE)
+              print("Success: Video embedded cleanly right underneath your main title banner.")
           else:
-              content += f"\n{iframe_markdown}"
-              print("Warning: Appended video player to page footer.")
+              # Secondary fail-safe backstop targets the original timeline position if title shifts names
+              timeline_pattern = r'(##\s*Session Timeline)'
+              if re.search(timeline_pattern, content, re.IGNORECASE):
+                  content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
+                  print("Fallback: Video embedded cleanly above Session Timeline header.")
+              else:
+                  content += f"\n{iframe_markdown}"
+                  print("Warning: Appended video player to page footer.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
@@ -108,5 +114,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@://github.com"
           git add NightSummary/NightSummary.html
-          git commit -m "Automated update: Fixed video positioning to top layout section" || echo "No changes detected"
+          git commit -m "Automated update: Fixed video positioning to top layout section [skip ci]" || echo "No changes detected"
           git push
