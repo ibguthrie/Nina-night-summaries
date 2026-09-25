@@ -22,10 +22,8 @@ jobs:
           python-version: '3.10'
 
       - name: Execute Verified Media Injector
-        env:
-          TZ: 'America/Los_Angeles'
+        shell: python
         run: |
-          cat << 'EOF' > inline_run.py
           import re
           import os
 
@@ -33,8 +31,8 @@ jobs:
           HTML_FILE = 'NightSummary/NightSummary.html'
 
           if not os.path.exists(HTML_FILE):
-              print(f"CRITICAL ERROR: '{HTML_FILE}' missing.")
-              exit(0)
+              print("CRITICAL ERROR: 'NightSummary/NightSummary.html' missing.")
+              exit(1)
 
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
               content = file.read()
@@ -46,15 +44,15 @@ jobs:
           video_id = "BhRsO0U6-r0" 
           expected_title = "Death Valley Observatory Timelapse 2026-09-25"
 
-          # 3. FIXED URL STRUCT: Hard-codes the exact, complete, working video link embed path elements
+          # 3. FIXED EMBED PATH STRUCT: Explicitly includes the required forward slashes
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px 0;\">\n"
-             f"    <iframe width=\"500\" height=\"500\" src=\"https://youtube.com{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
+              f"    <iframe width=\"500\" height=\"500\" src=\"https://youtube.com{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
               "</div>\n"
           )
 
-          # 4. ROBUST LAYOUT MATCH FILTER: Finds the literal text phrase 'Session Timeline' inside ANY HTML or Markdown tags
+          # 4. ROBUST LAYOUT MATCH FILTER: Finds the phrase 'Session Timeline' inside ANY HTML or Markdown tags
           timeline_pattern = r'([^\n]*Session\s+Timeline[^\n]*)'
 
           if re.search(timeline_pattern, content, re.IGNORECASE):
@@ -67,8 +65,6 @@ jobs:
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
-          EOF
-          python inline_run.py
 
       - name: Commit and Push changes
         run: |
