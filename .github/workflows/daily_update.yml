@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Execute Resilient Media Aligner
+      - name: Execute Broad Text Injector
         env:
           TZ: 'America/Los_Angeles'
         run: |
@@ -36,13 +36,13 @@ jobs:
           SHORTS_URL = 'https://youtube.com'
 
           if not os.path.exists(HTML_FILE):
-              print(f"CRITICAL ERROR: '{HTML_FILE}' missing from workspace.")
+              print(f"CRITICAL ERROR: '{HTML_FILE}' missing.")
               exit(0)
 
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
               content = file.read()
 
-          # Convert Windows \r\n to clean standard \n breaks
+          # Standardize Windows carriage returns to clean line breaks
           content = content.replace('\r\n', '\n')
 
           # 2. Extract Session Date from N.I.N.A HTML text layout string
@@ -77,27 +77,32 @@ jobs:
           # PURE MARKDOWN IMAGE LINK CARD LAYOUT: Completely bypasses HTML iframe blocking
           markdown_card = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
-              f"[![{expected_title}](https://youtube.com{video_id}/hqdefault.jpg)](https://www.youtube.com/watch?v={video_id})\n"
+              f"[![{expected_title}](https://youtube.com{video_id}/hqdefault.jpg)](https://youtube.com{video_id})\n"
               f"\n*{expected_title} (Click image above to play video)*\n"
           )
 
-          # PURGE CLEANUP: Strips previous test remnants to keep your layout crisp
-          content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n*', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'<div align="center".*?</iframe>.*?</div>', '', content, flags=re.DOTALL | re.IGNORECASE)
-          content = re.sub(r'<iframe width="500".*?</iframe>', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'\[Death Valley.*?\]https.*?', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'\*Death Valley Observatory.*?\*', '', content, flags=re.IGNORECASE)
+          # 3. COMPLETE PURGE SANITIZATION: Wipes out all duplicate stray lines left behind from previous tests
+          content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View.*?\n', '', content, flags=re.IGNORECASE)
+          content = re.sub(r'\[Death Valley.*?\]\(https.*?\)\n*', '', content, flags=re.IGNORECASE)
+          content = re.sub(r'\*Death Valley Observatory.*?\*\n*', '', content, flags=re.IGNORECASE)
+          content = re.sub(r'<div align="center".*?</iframe>.*?</div>\n*', '', content, flags=re.DOTALL | re.IGNORECASE)
+          content = re.sub(r'<iframe width="500".*?</iframe>\n*', '', content, flags=re.IGNORECASE)
 
-          # BROAD SEARCH FIX: Finds the FIRST header element block at the very top of your file
-          top_title_pattern = r'(#\s+.*?\n)'
+          # 4. BROAD KEYWORD TARGETING: Searches for the main literal header text title phrase used by N.I.N.A
+          keyword_pattern = r'(#\s+Night\s+Summary\s+Report)'
 
-          if re.search(top_title_pattern, content):
-              content = re.sub(top_title_pattern, f"\\1{markdown_card}", content, count=1)
-              print("Success: Video link card embedded cleanly right under the top layout header.")
+          if re.search(keyword_pattern, content, re.IGNORECASE):
+              content = re.sub(keyword_pattern, f"\\1\n{markdown_card}", content, count=1, flags=re.IGNORECASE)
+              print("Success: Video link card embedded cleanly right beneath your report title banner.")
           else:
-              # Fallback to absolute file top if pattern match checks fail
-              content = markdown_card + content
-              print("Fallback: Added video card to the absolute top lines of your document.")
+              # Secondary fail-safe backstop targets the timeline block
+              timeline_pattern = r'(##\s*Session Timeline)'
+              if re.search(timeline_pattern, content, re.IGNORECASE):
+                  content = re.sub(timeline_pattern, f"{markdown_card}\n\\1", content, count=1, flags=re.IGNORECASE)
+                  print("Fallback: Positioned video card directly above the Session Timeline header.")
+              else:
+                  content = markdown_card + content
+                  print("Absolute Fallback: Prefixed link block container to top line of document.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
@@ -107,7 +112,7 @@ jobs:
       - name: Save Modified File Back to History Tracking
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "github-actions[bot]@://github.com"
           git add NightSummary/NightSummary.html
-          git commit -m "Automated update: Embedded latest YouTube Short [skip ci]"
-          git push
+          git commit -m "Automated update: Embedded latest YouTube Short [skip ci]" || echo "No changes detected"
+          git push || echo "Push skipped or unneeded"
