@@ -76,7 +76,6 @@ jobs:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
 
           # 4. Generate the video player using rigid, cross-compatible HTML layout structures
-          # FIXED URL STRUCT: Added explicit / right before the video_id tag
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px 0;\">\n"
@@ -84,15 +83,15 @@ jobs:
               "</div>\n"
           )
 
-          # 5. Target and inject cleanly right above your Session Timeline section header
-          timeline_pattern = r'(##\s*Session Timeline)'
+          # 5. HIGH-FLEXIBILITY TEXT TARGETING: Matches 'Session Timeline' regardless of blank spaces or extra hidden symbols
+          timeline_pattern = r'(##\s*Session\s+Timeline[^\n]*)'
 
           if re.search(timeline_pattern, content, re.IGNORECASE):
               content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video embedded cleanly via custom Markdown block filters.")
+              print("Success: Video embedded cleanly above your timeline header layout.")
           else:
               content += f"\n{iframe_markdown}"
-              print("Warning: Appended video player to page footer.")
+              print("Warning: Missing all layout target headers. Appended video player to page footer.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
@@ -104,5 +103,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@://github.com"
           git add NightSummary/NightSummary.html
-          git commit -m "Automated update: Fixed link parameters and embedded active video player frame" || echo "No changes detected"
+          git commit -m "Automated update: Fixed pattern layout and properly embedded video element"
           git push
