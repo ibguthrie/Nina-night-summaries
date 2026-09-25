@@ -6,19 +6,17 @@ on:
     - cron: '30 16 * * *'
   workflow_dispatch: # Allows manual force testing right from the Actions UI window
 
-# Permissions required to bypass git commits and push code directly to the live environment layout
+# Global default permissions setup
 permissions:
   contents: write
   pages: write
   id-token: write
 
-# Prevents system lock conflicts if multiple automated workflows run concurrently
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
 jobs:
-  # JOB 1: Modifies the HTML file and packages up the repository files
   build-summary:
     runs-on: ubuntu-latest
     steps:
@@ -50,7 +48,7 @@ jobs:
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
               content = file.read()
 
-          # Standardize Windows carriage returns to clean line breaks
+          # Convert Windows \r\n to clean standard \n breaks
           content = content.replace('\r\n', '\n')
 
           # Extract Session Date from N.I.N.A HTML text layout string
@@ -114,6 +112,14 @@ jobs:
           EOF
           python inline_run.py
 
+      - name: Save Modified File Back to History Tracking
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@://github.com"
+          git add NightSummary/NightSummary.html
+          git commit -m "Automated update: Embedded latest YouTube Short [skip ci]" || echo "No changes detected"
+          git push || echo "Push skipped or unneeded"
+
       - name: Setup Pages Settings Environments
         uses: actions/configure-pages@v5
 
@@ -122,11 +128,14 @@ jobs:
         with:
           path: '.'
 
-  # JOB 2: Direct secure pipeline environment link to your live site
   deploy-summary:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    # Explicit permissions granted uniquely to this deployment stage pipeline
+    permissions:
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
     needs: build-summary
     steps:
