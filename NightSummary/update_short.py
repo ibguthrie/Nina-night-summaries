@@ -41,7 +41,7 @@ def inject_into_html(video_id):
         print("Skipping HTML update because no matching video was found.")
         return
         
-    # Responsive square layout (1:1 ratio) optimized for 500x500px on desktop
+    # Responsive square layout (1:1 ratio)
     iframe_code = f"""
     <!-- Automated YouTube Square Video Insertion -->
     <div style="display: flex; justify-content: center; margin: 20px 0;">
@@ -56,32 +56,38 @@ def inject_into_html(video_id):
     </div>
     """
 
-
     with open(HTML_FILE, 'r', encoding='utf-8') as file:
         content = file.read()
 
-    # Strategy: Find 'Session Timeline' inside an HTML tag and capture the tag opening
-    # This matches scenarios like: <h2>Session Timeline</h2>, <p>Session Timeline</p>, etc.
-    timeline_pattern = r'(<[^>]+>\s*Session Timeline\s*</[^>]+>)'
+    # STRATEGY 1: Aggressive search for 'Session Timeline' regardless of the tag types or white spaces
+    # This matches <h2>Session Timeline</h2>, <p><b>Session Timeline</b></p>, etc.
+    timeline_pattern = r'(<[^>]+>[^<]*Session Timeline[^<]*</[^>]+>)'
     
+    # STRATEGY 2: Absolute raw text fallback if it's completely un-tagged raw text
+    raw_text_pattern = r'(Session Timeline)'
+
     if re.search(timeline_pattern, content, re.IGNORECASE):
-        # Insert the iframe code immediately BEFORE the matched Session Timeline tag element
         updated_content = re.sub(timeline_pattern, f"{iframe_code}\n\\1", content, count=1, flags=re.IGNORECASE)
-        
-        with open(HTML_FILE, 'w', encoding='utf-8') as file:
-            file.write(updated_content)
-        print(f"Successfully injected Short right before the 'Session Timeline' section.")
+        print("Success: Found the 'Session Timeline' HTML element! Injecting video directly above it.")
+    elif re.search(raw_text_pattern, content, re.IGNORECASE):
+        updated_content = re.sub(raw_text_pattern, f"{iframe_code}\n\\1", content, count=1, flags=re.IGNORECASE)
+        print("Success: Found raw 'Session Timeline' text. Injecting video directly above it.")
     else:
-        # Fallback safety: If 'Session Timeline' isn't found, look for the closing </body> tag instead
-        print("Warning: Could not find exact 'Session Timeline' text structure. Trying </body> fallback...")
+        # STRATEGY 3: Ultimate Fallback — place at the bottom of the page if the text is completely missing
+        print("Warning: Could not find 'Session Timeline' text anywhere in the document. Using </body> fallback...")
         body_close_pattern = r'(</body>)'
         if re.search(body_close_pattern, content, re.IGNORECASE):
             updated_content = re.sub(body_close_pattern, f"{iframe_code}\n\\1", content, count=1, flags=re.IGNORECASE)
-            with open(HTML_FILE, 'w', encoding='utf-8') as file:
-                file.write(updated_content)
-            print("Successfully placed the Short at the bottom of the page as a fallback.")
+            print("Success: Placed the video right before the closing body tag.")
         else:
-            print("Error: Could not find structural entry points in the HTML file.")
+            print("CRITICAL ERROR: Could not find any target elements or closing body tags in the file.")
+            import sys
+            sys.exit(2) # This is what triggered your error code exit
+
+    # Write the changes back out safely
+    with open(HTML_FILE, 'w', encoding='utf-8') as file:
+        file.write(updated_content)
+
 
 if __name__ == '__main__':
     target_video_id = find_video_id_by_title()
