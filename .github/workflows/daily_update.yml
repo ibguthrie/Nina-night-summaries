@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Execute Resilient Python Injector
+      - name: Execute Markdown Resilient Injector
         env:
           TZ: 'America/Los_Angeles'
         run: |
@@ -43,15 +43,15 @@ jobs:
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
               content = file.read()
 
-          # 2. Extract Session Date from N.I.N.A HTML layout strings
+          # 2. Extract Session Date from N.I.N.A text layout metadata strings
           date_match = re.search(r'\*\*Session Date:\*\*\s*([0-9]{4}-[0-9]{2}-[0-9]{2})', content)
           session_date = date_match.group(1) if date_match else datetime.now().strftime('%Y-%m-%d')
           expected_title = f"Death Valley Observatory Timelapse {session_date}"
           
-          # HARDCODED ANCHOR DEFENSE: This ensures a working video renders even if network feeds error out
+          # HARDCODED ANCHOR DEFENSE: Backup video ID used if live feeds experience connection drops
           video_id = "BhRsO0U6-r0" 
 
-          # 3. Request official stream data with clean XML regex decoding
+          # 3. Pull from YouTube's official feed (immune to layout script blocking)
           try:
               req = urllib.request.Request(FEED_URL, headers={'User-Agent': 'Mozilla/5.0'})
               with urllib.request.urlopen(req, timeout=15) as response:
@@ -66,36 +66,31 @@ jobs:
                               print(f"Direct Match Resolved: {v_title} -> {video_id}")
                               break
                       else:
-                          video_id = video_blocks[0][0]
-                          expected_title = video_blocks[0][1]
+                          video_id = video_blocks
+                          expected_title = video_blocks
                           print(f"Date variance detected. Using latest upload hook: {expected_title} -> {video_id}")
           except Exception as e:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
 
-          # 4. Generate the dynamic embedded player frame with the requested text header banner
-          iframe_code = (
-              "\n    <!-- Automated YouTube Square Video Insertion -->\n"
-              "    <div style=\"text-align: center; margin: 30px auto; max-width: 500px; font-family: system-ui, -apple-system, sans-serif;\">\n"
-              "        <h2 style=\"margin-bottom: 15px; font-size: 1.5rem; font-weight: 600; color: inherit;\">🌌 Last Night's All-Sky Timelapse View</h2>\n"
-              "        <div style=\"position: relative; width: 100%; aspect-ratio: 1 / 1;\">\n"
-             f"            <iframe width=\"500\" height=\"500\" src=\"https://youtube.com{video_id}\" title=\"{expected_title}\" frameborder=\"0\" style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; max-width: 100%; aspect-ratio: 1 / 1;\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
-              "        </div>\n"
-              "    </div>\n"
+          # 4. Generate the video insertion code using pure Markdown elements
+          # This converts the code to raw inline element filters your page renderer expects
+          iframe_markdown = (
+              "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
+              f'<iframe width="500" height="500" src="https://youtube.com{video_id}" title="{expected_title}" frameborder="0" style="max-width: 100%; aspect-ratio: 1 / 1; display: block; margin: 20px auto;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n'
           )
 
-          # 5. Inject directly above 'Session Timeline'
-          timeline_pattern = r'(<[^>]+>[^<]*Session Timeline[^<]*</[^>]+>)'
-          raw_text_pattern = r'(Session Timeline)'
+          # 5. Clean Up Old Script Attempts (Deletes duplicate text injections from previous layout tests)
+          content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n+', '', content, flags=re.IGNORECASE)
+
+          # 6. Target and inject cleanly above the structural timeline heading element
+          timeline_pattern = r'(##\s*Session Timeline)'
 
           if re.search(timeline_pattern, content, re.IGNORECASE):
-              content = re.sub(timeline_pattern, f"{iframe_code}\n\\1", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video player embedded above Session Timeline container.")
-          elif re.search(raw_text_pattern, content, re.IGNORECASE):
-              content = re.sub(raw_text_pattern, f"{iframe_code}\n\\1", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video player embedded above raw text line.")
+              content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
+              print("Success: Video embedded cleanly via custom Markdown block filters.")
           else:
-              content += f"\n{iframe_code}"
-              print("Warning: Appended video player to page footer.")
+              content += f"\n{iframe_markdown}"
+              print("Warning: Missing structural headers. Video appended cleanly to foot note layout.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
