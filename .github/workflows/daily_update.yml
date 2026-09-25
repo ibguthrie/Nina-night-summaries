@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Execute Reverted Media Injector
+      - name: Execute Clean Media Injector
         env:
           TZ: 'America/Los_Angeles'
         run: |
@@ -69,8 +69,8 @@ jobs:
                               print(f"Direct Match Resolved: {v_title} -> {video_id}")
                               break
                       else:
-                          video_id = video_blocks[0][0]
-                          expected_title = video_blocks[0][1]
+                          video_id = video_blocks
+                          expected_title = video_blocks
                           print(f"Date variance detected. Using latest upload hook: {expected_title} -> {video_id}")
           except Exception as e:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
@@ -83,7 +83,15 @@ jobs:
               "</div>\n"
           )
 
-          # 5. Target and inject cleanly right above your Session Timeline section header
+          # 5. PURGE CLEANUP: Erases duplicate stray banners or frames from previous test runs
+          content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n*', '', content, flags=re.IGNORECASE)
+          content = re.sub(r'<div align="center".*?</iframe>.*?</div>', '', content, flags=re.DOTALL | re.IGNORECASE)
+          content = re.sub(r'<iframe width="500".*?</iframe>', '', content, flags=re.IGNORECASE)
+          content = re.sub(r'\[Death Valley.*?\]\(https.*?\)\n*', '', content, flags=re.IGNORECASE)
+          content = re.sub(r'\[Death Valley.*?\]https.*?\n*', '', content, flags=re.IGNORECASE)
+          content = re.sub(r'\*Death Valley Observatory.*?\*\n*', '', content, flags=re.IGNORECASE)
+
+          # 6. Target and inject cleanly right above your Session Timeline section header
           timeline_pattern = r'(##\s*Session Timeline)'
 
           if re.search(timeline_pattern, content, re.IGNORECASE):
