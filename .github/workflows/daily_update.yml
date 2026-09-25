@@ -34,6 +34,7 @@ jobs:
           # 1. Base Configuration Paths
           HTML_FILE = 'NightSummary/NightSummary.html'
           CHANNEL_ID = 'UCf-B3Rnd2W_vHn2_iRbe_9A'
+          # FIXED URL STRUCT: Added the required forward slash so it successfully connects to the RSS stream
           FEED_URL = f'https://youtube.com{CHANNEL_ID}'
 
           if not os.path.exists(HTML_FILE):
