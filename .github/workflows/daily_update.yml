@@ -79,18 +79,16 @@ jobs:
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px 0;\">\n"
-             f"    <iframe width=\"500\" height=\"500\" src=\"https://www.youtube.com/embed/{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
+             f"    <iframe width=\"500\" height=\"500\" src=\"https://youtube.com{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
               "</div>\n"
           )
 
-          # 5. PURGE PREVIOUS INJECTIONS: cancelled
+          # 6. SAFE POSITION FIX: Safely handles any trailing spaces up to the end of the line ($) without hanging
+          timeline_pattern = r'(##\s*Session\s+Timeline\s*$)'
 
-          # 6. ADJUSTED TIMELINE TARGETING: Matches the line regardless of hidden trailing spaces or symbols
-          timeline_pattern = r'([^\n]*Session\s+Timeline[^\n]*)'
-
-          if re.search(timeline_pattern, content, re.IGNORECASE):
-              content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video embedded cleanly via custom Markdown block filters.")
+          if re.search(timeline_pattern, content, re.M | re.I):
+              content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.M | re.I)
+              print("Success: Video embedded cleanly right above your Session Timeline segment.")
           else:
               content += f"\n{iframe_markdown}"
               print("Warning: Appended video player to page footer.")
