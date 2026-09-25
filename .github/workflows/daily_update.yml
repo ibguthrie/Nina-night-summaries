@@ -76,7 +76,7 @@ jobs:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
 
           # 4. Generate the video player using rigid, cross-compatible HTML layout structures
-          # FIXED URL STRUCT: Adds the explicit forward-slash right before the video_id variable
+          # FIXED URL STRUCT: Added explicit / right before the video_id tag
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px 0;\">\n"
@@ -102,7 +102,7 @@ jobs:
       - name: Commit and Push changes
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "github-actions[bot]@://github.com"
           git add NightSummary/NightSummary.html
-          git commit -m "Automated update: Embedded active YouTube link block banner" || echo "No changes detected"
+          git commit -m "Automated update: Fixed link parameters and embedded active video player frame" || echo "No changes detected"
           git push
