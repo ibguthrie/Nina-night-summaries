@@ -74,14 +74,13 @@ jobs:
                           print(f"Target Resolved: {vid_title} -> {video_id}")
                           break
                   else:
-                      video_id = matches
-                      expected_title = matches
+                      video_id = matches[0][0]
+                      expected_title = matches[0][1]
                       print(f"Date variance detected. Using latest upload fallback: {expected_title} -> {video_id}")
           except Exception as e:
               print(f"Scraping encounter error: {e}. Utilizing backup verification anchor ID.")
 
           # PURE MARKDOWN IMAGE LINK CARD LAYOUT: Completely bypasses HTML iframe blocking
-          # Uses YouTube's official HQ image thumbnail endpoint
           markdown_card = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               f"[![{expected_title}](https://youtube.com{video_id}/hqdefault.jpg)](https://youtube.com{video_id})\n"
@@ -133,7 +132,6 @@ jobs:
   deploy-summary:
     environment:
       name: github-pages
-      url: \${{ steps.deployment.outputs.page_url }}
     permissions:
       pages: write
       id-token: write
