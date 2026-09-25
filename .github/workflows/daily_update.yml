@@ -27,19 +27,16 @@ jobs:
         run: |
           cat << 'EOF' > inline_run.py
           import urllib.request
-          import xml.etree.ElementTree as ET
           import re
           import os
           from datetime import datetime
 
-          # 1. Fixed Configuration Pathing for your subfolder structure
-          CHANNEL_ID = 'UCf-B3Rnd2W_vHn2_iRbe_9A' 
+          # 1. Main Direct Configuration Pathing
           HTML_FILE = 'NightSummary/NightSummary.html'
-          FEED_URL = f'https://youtube.com{CHANNEL_ID}'
+          SHORTS_URL = 'https://youtube.com'
 
           if not os.path.exists(HTML_FILE):
-              print(f"CRITICAL PATH ERROR: '{HTML_FILE}' was not found in your repository branches.")
-              print(f"Current workspace files layout shows: {os.listdir('.')}")
+              print(f"CRITICAL PATH ERROR: '{HTML_FILE}' was not found.")
               exit(0)
 
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
@@ -47,7 +44,6 @@ jobs:
 
           # 2. Extract Session Date from N.I.N.A HTML layout metadata string
           date_match = re.search(r'\*\*Session Date:\*\*\s*([0-9]{4}-[0-9]{2}-[0-9]{2})', content)
-          
           if date_match:
               session_date = date_match.group(1)
               print(f"Parsed Session Date from HTML: '{session_date}'")
@@ -56,33 +52,40 @@ jobs:
               print(f"Warning: Using system clock date fallback: '{session_date}'")
 
           expected_title = f"Death Valley Observatory Timelapse {session_date}"
-          print(f"Searching official feed for video matching: '{expected_title}'")
+          print(f"Scraping channel layouts for text string: '{expected_title}'")
 
-          # 3. Pull XML Data Feed 
+          # 3. Pull Public Page HTML Layout Directly with Custom Headers
           video_id = None
           try:
-              req = urllib.request.Request(FEED_URL, headers={'User-Agent': 'Mozilla/5.0'})
-              with urllib.request.urlopen(req) as response:
-                  root = ET.fromstring(response.read())
+              req = urllib.request.Request(SHORTS_URL, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+              with urllib.request.urlopen(req, timeout=15) as response:
+                  page_html = response.read().decode('utf-8')
               
-              namespaces = {
-                  'atom': 'http://w3.org', 
-                  'yt': 'http://youtube.com'
-              }
+              # Locate all unique Video IDs matched alongside your timeline titles in the raw source stream
+              # YouTube stores this metadata as "videoId":"XXXX","title":{"runs":[{"text":"Your Title Here"}]}"
+              pattern = r'"videoId":"([^"]+)","title":\{"runs":\[\{"text":"([^"]+)"\}'
+              matches = re.findall(pattern, page_html)
               
-              for entry in root.findall('atom:entry', namespaces):
-                  title = entry.find('atom:title', namespaces).text
-                  if expected_title.lower() in title.lower():
-                      video_id = entry.find('yt:videoId', namespaces).text
+              # First loop: Search specifically for today's dynamic calendar date title
+              for vid_id, vid_title in matches:
+                  if expected_title.lower() in vid_title.lower():
+                      video_id = vid_id
+                      print(f"Match Found! Title: '{vid_title}' matched to Video ID: {video_id}")
                       break
-          except Exception as e:
-              print(f"Error checking YouTube feed stream index: {e}")
-
-          # 4. Modify and inject code if the title matches
-          if video_id:
-              print(f"Target video found! Video ID resolved to: {video_id}")
               
-              # Square layout optimized for desktop and fluid responsive mobile views
+              # Absolute Fail-Safe Fallback: If dates are mismatched, grab the absolute first video listed on your channel
+              if not video_id and matches:
+                  video_id = matches[0][0]
+                  fallback_title = matches[0][1]
+                  print(f"Primary Title Match Missed. Executing Fallback -> Using absolute latest upload: '{fallback_title}' (ID: {video_id})")
+                  expected_title = fallback_title
+
+          except Exception as e:
+              print(f"Network error trying to look up videos directly: {e}")
+
+          # 4. Modify and inject code if a video target is successfully resolved
+          if video_id:
+              # Square layout optimized for desktop (500x500) and fluid responsive mobile views
               iframe_code = f'\n    <!-- Automated YouTube Square Video Insertion -->\n    <div style="display: flex; justify-content: center; margin: 20px 0;">\n        <iframe width="500" height="500" src="https://youtube.com{video_id}" title="{expected_title}" frameborder="0" style="max-width: 100%; aspect-ratio: 1 / 1;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n    </div>'
               
               timeline_pattern = r'(<[^>]+>[^<]*Session Timeline[^<]*</[^>]+>)'
@@ -101,14 +104,14 @@ jobs:
               with open(HTML_FILE, 'w', encoding='utf-8') as file:
                   file.write(content)
           else:
-              print(f"Notice: No upload with title variant matching '{expected_title}' found in stream index.")
+              print("Notice: Could not parse any upload structures from your public channel.")
           EOF
           python inline_run.py
 
       - name: Commit and Push changes
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@://github.com"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add NightSummary/NightSummary.html
           git commit -m "Automated update: Embedded latest YouTube Short [skip ci]" || echo "No changes detected"
           git push
