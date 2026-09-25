@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Execute Clean Media Injector
+      - name: Execute Verified Markdown Link Injector
         env:
           TZ: 'America/Los_Angeles'
         run: |
@@ -75,31 +75,26 @@ jobs:
           except Exception as e:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
 
-          # 4. Generate the video player using rigid, cross-compatible HTML layout structures
+          # 4. Generate pure Markdown link card layout block (unblockable by secure web hosts)
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
-              "<div align=\"center\" style=\"margin: 25px 0;\">\n"
-             f"    <iframe width=\"500\" height=\"500\" src=\"https://youtube.com{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
-              "</div>\n"
+              f"**[{expected_title}](https://youtube.com{video_id})**\n\n"
           )
 
-          # 5. PURGE CLEANUP: Erases duplicate stray banners or frames from previous test runs
-          content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n*', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'<div align="center".*?</iframe>.*?</div>', '', content, flags=re.DOTALL | re.IGNORECASE)
-          content = re.sub(r'<iframe width="500".*?</iframe>', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'\[Death Valley.*?\]\(https.*?\)\n*', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'\[Death Valley.*?\]https.*?\n*', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'\*Death Valley Observatory.*?\*\n*', '', content, flags=re.IGNORECASE)
+          # 5. Target and inject cleanly right beneath your main "# Night Summary Report" banner text
+          top_title_pattern = r'(#\s+Night\s+Summary\s+Report)'
 
-          # 6. Target and inject cleanly right above your Session Timeline section header
-          timeline_pattern = r'(##\s*Session Timeline)'
-
-          if re.search(timeline_pattern, content, re.IGNORECASE):
-              content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video embedded cleanly via custom Markdown block filters.")
+          if re.search(top_title_pattern, content, re.IGNORECASE):
+              content = re.sub(top_title_pattern, f"\\1\n{iframe_markdown}", content, count=1, flags=re.IGNORECASE)
+              print("Success: Video link card embedded cleanly right under the main title report banner.")
           else:
-              content += f"\n{iframe_markdown}"
-              print("Warning: Appended video player to page footer.")
+              timeline_pattern = r'(##\s*Session Timeline)'
+              if re.search(timeline_pattern, content, re.IGNORECASE):
+                  content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
+                  print("Fallback: Video link embedded cleanly above Session Timeline header.")
+              else:
+                  content += f"\n{iframe_markdown}"
+                  print("Warning: Appended video player to page footer.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
