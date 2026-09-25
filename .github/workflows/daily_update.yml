@@ -39,7 +39,7 @@ jobs:
           from datetime import datetime
 
           HTML_FILE = 'NightSummary/NightSummary.html'
-          SHORTS_URL = 'https://youtube.com'
+          SHORTS_URL = 'https://www.youtube.com/@bguthrie/shorts'
 
           if not os.path.exists(HTML_FILE):
               print(f"CRITICAL ERROR: '{HTML_FILE}' missing.")
@@ -48,7 +48,7 @@ jobs:
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
               content = file.read()
 
-          # Convert Windows \r\n to clean standard \n breaks
+          # Standardize Windows carriage returns to clean line breaks
           content = content.replace('\r\n', '\n')
 
           # Extract Session Date from N.I.N.A HTML text layout string
@@ -80,12 +80,11 @@ jobs:
           except Exception as e:
               print(f"Scraping encounter error: {e}. Utilizing backup verification anchor ID.")
 
-          # Generate the clean iframe layout container matching your exact Markdown page style layout
+          # PURE MARKDOWN PLAYER LAYOUT: Bypasses standard HTML blocks to satisfy theme filter constraints
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
-              "<div align=\"center\" style=\"margin: 25px auto; display: block;\">\n"
-             f"    <iframe width=\"500\" height=\"500\" src=\"https://youtube.com{video_id}\" title=\"{expected_title}\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
-              "</div>\n"
+              f'[{expected_title}](https://youtube.com{video_id})\n\n'
+              f'<iframe width="500" height="500" src="https://youtube.com{video_id}" title="{expected_title}" frameborder="0" style="display: block; margin: 25px auto; max-width: 100%;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n'
           )
 
           # PURGE CLEANUP: Strips previous test remnants to keep your layout crisp
@@ -93,7 +92,7 @@ jobs:
           content = re.sub(r'<div align="center".*?</iframe>.*?</div>', '', content, flags=re.DOTALL | re.IGNORECASE)
           content = re.sub(r'<iframe width="500".*?</iframe>', '', content, flags=re.IGNORECASE)
 
-          # CRITICAL ACCURACY FIX: Targets the exact `# Night Summary Report` title block syntax used by N.I.N.A
+          # Target the primary `# Night Summary Report` title block syntax used by N.I.N.A
           top_title_pattern = r'(#\s+Night\s+Summary\s+Report)'
 
           if re.search(top_title_pattern, content, re.IGNORECASE):
@@ -116,7 +115,7 @@ jobs:
       - name: Save Modified File Back to History Tracking
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@://github.com"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add NightSummary/NightSummary.html
           git commit -m "Automated update: Embedded latest YouTube Short [skip ci]" || echo "No changes detected"
           git push || echo "Push skipped or unneeded"
@@ -139,7 +138,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-summary
     steps:
-      # Upgraded to v4 to completely remove Node.js 20 deprecation log messages from your dashboard panel
       - name: Force Instant Live Update to GitHub Pages Website URL
         id: deployment
         uses: actions/deploy-pages@v4
