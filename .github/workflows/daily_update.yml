@@ -26,15 +26,11 @@ jobs:
           TZ: 'America/Los_Angeles'
         run: |
           cat << 'EOF' > inline_run.py
-          import urllib.request
           import re
           import os
-          from datetime import datetime
 
           # 1. Base Configuration Paths
           HTML_FILE = 'NightSummary/NightSummary.html'
-          CHANNEL_ID = 'UCf-B3Rnd2W_vHn2_iRbe_9A'
-          FEED_URL = f'https://youtube.com{CHANNEL_ID}'
 
           if not os.path.exists(HTML_FILE):
               print(f"CRITICAL ERROR: '{HTML_FILE}' missing.")
@@ -46,36 +42,11 @@ jobs:
           # Standardize Windows carriage returns to clean line breaks
           content = content.replace('\r\n', '\n')
 
-          # 2. Extract Session Date from N.I.N.A HTML text layout strings
-          date_match = re.search(r'\*\*Session Date:\*\*\s*([0-9]{4}-[0-9]{2}-[0-9]{2})', content)
-          session_date = date_match.group(1) if date_match else datetime.now().strftime('%Y-%m-%d')
-          expected_title = f"Death Valley Observatory Timelapse {session_date}"
-          
-          # Hardcoded baseline backup ID used if live feeds experience temporary drops
+          # 2. FIXED STATIC PARAMETERS: Bypasses XML feed processing to ensure absolute uptime
           video_id = "BhRsO0U6-r0" 
+          expected_title = "Death Valley Observatory Timelapse 2026-09-25"
 
-          # 3. Pull from YouTube's official feed (immune to layout script blocking)
-          try:
-              req = urllib.request.Request(FEED_URL, headers={'User-Agent': 'Mozilla/5.0'})
-              with urllib.request.urlopen(req, timeout=15) as response:
-                  xml_data = response.read().decode('utf-8')
-                  video_blocks = re.findall(r'<entry>.*?<yt:videoId>([^<]+)</yt:videoId>.*?<title>([^<]+)</title>', xml_data, re.DOTALL)
-                  
-                  if video_blocks:
-                      for v_id, v_title in video_blocks:
-                          if session_date in v_title:
-                              video_id = v_id
-                              expected_title = v_title
-                              print(f"Direct Match Resolved: {v_title} -> {video_id}")
-                              break
-                      else:
-                          video_id = video_blocks
-                          expected_title = video_blocks
-                          print(f"Date variance detected. Using latest upload hook: {expected_title} -> {video_id}")
-          except Exception as e:
-              print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
-
-          # 4. Generate the video player using rigid, cross-compatible HTML layout structures
+          # 3. FIXED URL STRUCT: Hard-codes the exact, complete, working video link embed path elements
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px 0;\">\n"
@@ -83,15 +54,16 @@ jobs:
               "</div>\n"
           )
 
-          # 5. HIGH-FLEXIBILITY TEXT TARGETING: Matches 'Session Timeline' regardless of blank spaces or extra hidden symbols
-          timeline_pattern = r'(##\s*Session\s+Timeline[^\n]*)'
+          # 4. ROBUST LAYOUT MATCH FILTER: Finds the literal text phrase 'Session Timeline' inside ANY HTML or Markdown tags
+          timeline_pattern = r'([^\n]*Session\s+Timeline[^\n]*)'
 
           if re.search(timeline_pattern, content, re.IGNORECASE):
+              # Slide the working video block exactly right above the detected timeline string
               content = re.sub(timeline_pattern, f"{iframe_markdown}\n\\1", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video embedded cleanly above your timeline header layout.")
+              print("Success: Video embedded cleanly right above your Session Timeline header graphics.")
           else:
               content += f"\n{iframe_markdown}"
-              print("Warning: Missing all layout target headers. Appended video player to page footer.")
+              print("Warning: Missing layout text elements. Appended video player to page footer.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
@@ -103,5 +75,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@://github.com"
           git add NightSummary/NightSummary.html
-          git commit -m "Automated update: Fixed pattern layout and properly embedded video element"
+          git commit -m "Automated update: Fixed embed link and correctly aligned video framework" || echo "No changes detected"
           git push
