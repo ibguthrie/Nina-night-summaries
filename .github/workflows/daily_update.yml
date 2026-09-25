@@ -21,13 +21,13 @@ jobs:
         with:
           python-version: '3.10'
 
-      # Standard external run call removes multi-line string block freezes completely
       - name: Execute Verified Media Injector
         shell: python
         run: |
           import re
           import os
 
+          # 1. Base Configuration Paths
           HTML_FILE = 'NightSummary/NightSummary.html'
 
           if not os.path.exists(HTML_FILE):
@@ -40,11 +40,11 @@ jobs:
           # Convert Windows \r\n to clean standard \n breaks
           content = content.replace('\r\n', '\n')
 
-          # FIXED STATIC PARAMETERS
+          # 2. FIXED STATIC PARAMETERS
           video_id = "BhRsO0U6-r0" 
           expected_title = "Death Valley Observatory Timelapse 2026-09-25"
 
-          # FIXED EMBED PATH STRUCT: Explicitly includes working forward slash directories
+          # 3. FIXED EMBED PATH STRUCT: Explicitly links your video ID into a working embed layout path string
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px 0;\">\n"
@@ -52,12 +52,12 @@ jobs:
               "</div>\n"
           )
 
-          # PURGE CLEANUP REMNANTS: Targets and erases the old broken link format from your code
+          # 4. PURGE CLEANUP: Erases previous broken layout link attempts anywhere in the code
           content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n*', '', content, flags=re.IGNORECASE)
           content = re.sub(r'<div align="center".*?</iframe>.*?</div>', '', content, flags=re.DOTALL | re.IGNORECASE)
           content = re.sub(r'<iframe width="500".*?</iframe>', '', content, flags=re.IGNORECASE)
 
-          # Target the primary Session Timeline heading and inject cleanly right above it
+          # 5. Target the primary Session Timeline heading and inject cleanly right above it
           timeline_pattern = r'(##\s*Session Timeline)'
 
           if re.search(timeline_pattern, content, re.IGNORECASE):
