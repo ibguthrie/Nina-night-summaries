@@ -83,7 +83,7 @@ jobs:
               "</div>\n"
           )
 
-          # 6. SAFE POSITION FIX: Safely handles any trailing spaces up to the end of the line ($) without hanging
+          # 5. SAFE POSITION FIX: Handles trailing spaces up to the end of the line ($) without hanging
           timeline_pattern = r'(##\s*Session\s+Timeline\s*$)'
 
           if re.search(timeline_pattern, content, re.M | re.I):
