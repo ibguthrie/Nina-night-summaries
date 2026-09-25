@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Execute Markdown Resilient Injector
+      - name: Execute Windows-Resilient Injector
         env:
           TZ: 'America/Los_Angeles'
         run: |
@@ -43,6 +43,9 @@ jobs:
           with open(HTML_FILE, 'r', encoding='utf-8') as file:
               content = file.read()
 
+          # WINDOWS COMPATIBILITY FIX: Convert standard Windows \r\n line wraps to clean Unix \n lines
+          content = content.replace('\r\n', '\n')
+
           # 2. Extract Session Date from N.I.N.A text layout metadata strings
           date_match = re.search(r'\*\*Session Date:\*\*\s*([0-9]{4}-[0-9]{2}-[0-9]{2})', content)
           session_date = date_match.group(1) if date_match else datetime.now().strftime('%Y-%m-%d')
@@ -51,7 +54,7 @@ jobs:
           # HARDCODED ANCHOR DEFENSE: Backup video ID used if live feeds experience connection drops
           video_id = "BhRsO0U6-r0" 
 
-          # 3. Pull from YouTube's official feed (immune to layout script blocking)
+          # 3. Pull from YouTube's official feed
           try:
               req = urllib.request.Request(FEED_URL, headers={'User-Agent': 'Mozilla/5.0'})
               with urllib.request.urlopen(req, timeout=15) as response:
@@ -73,14 +76,13 @@ jobs:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
 
           # 4. Generate the video insertion code using pure Markdown elements
-          # This converts the code to raw inline element filters your page renderer expects
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               f'<iframe width="500" height="500" src="https://youtube.com{video_id}" title="{expected_title}" frameborder="0" style="max-width: 100%; aspect-ratio: 1 / 1; display: block; margin: 20px auto;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n'
           )
 
-          # 5. Clean Up Old Script Attempts (Deletes duplicate text injections from previous layout tests)
-          content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n+', '', content, flags=re.IGNORECASE)
+          # 5. Clean Up Old Injections (Wipes out old standalone titles left behind at the bottom of the page)
+          content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n*', '', content, flags=re.IGNORECASE)
 
           # 6. Target and inject cleanly above the structural timeline heading element
           timeline_pattern = r'(##\s*Session Timeline)'
