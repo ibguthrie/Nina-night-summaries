@@ -4,14 +4,15 @@ import re
 from datetime import datetime
 
 # 1. Configuration
-CHANNEL_ID = 'YOUR_CHANNEL_ID_HERE' 
+# !!! MAKE SURE TO UPDATE YOUR CHANNEL ID HERE !!!
+CHANNEL_ID = '@bguthrie' 
 HTML_FILE = 'NightSummary.html'
 FEED_URL = f'https://youtube.com{CHANNEL_ID}'
 
-# 2. Generate expected title (e.g., "Death Valley Observatory Timelapse 2026-09-25")
+# 2. Generate expected title using today's date (e.g., "Death Valley Observatory Timelapse 2026-09-25")
 today_str = datetime.utcnow().strftime('%Y-%m-%d')
 expected_title = f"Death Valley Observatory Timelapse {today_str}"
-print(f"Searching for video titled: '{expected_title}'")
+print(f"Searching YouTube feed for: '{expected_title}'")
 
 def find_video_id_by_title():
     try:
@@ -24,11 +25,8 @@ def find_video_id_by_title():
             'yt': 'http://youtube.com'
         }
         
-        # Loop through recent videos in the feed
         for entry in root.findall('atom:entry', namespaces):
             title = entry.find('atom:title', namespaces).text
-            
-            # Check if today's expected title is inside the video title
             if expected_title.lower() in title.lower():
                 video_id = entry.find('yt:videoId', namespaces).text
                 return video_id
@@ -38,36 +36,41 @@ def find_video_id_by_title():
         print(f"Error reading YouTube feed: {e}")
     return None
 
-def update_html(video_id):
+def inject_into_html(video_id):
     if not video_id:
         print("Skipping HTML update because no matching video was found.")
         return
         
-    iframe_code = f"""<!-- YOUTUBE_SHORT_START -->
-<div style="display: flex; justify-content: center; margin: 20px 0;">
-    <iframe width="315" height="560" 
-        src="https://youtube.com{video_id}" 
-        title="{expected_title}" 
-        frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-        allowfullscreen>
-    </iframe>
-</div>
-<!-- YOUTUBE_SHORT_END -->"""
+    # Standard responsive video embed layout
+    iframe_code = f"""
+    <!-- Automated YouTube Short Insertion -->
+    <div style="display: flex; justify-content: center; margin: 20px 0;">
+        <iframe width="315" height="560" 
+            src="https://youtube.com{video_id}" 
+            title="{expected_title}" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen>
+        </iframe>
+    </div>
+    """
 
     with open(HTML_FILE, 'r', encoding='utf-8') as file:
         content = file.read()
 
-    pattern = r'<!-- YOUTUBE_SHORT_START -->.*?<!-- YOUTUBE_SHORT_END -->'
+    # Strategy: Find the opening <body> tag and place the video right after it
+    body_pattern = r'(<body[^>]*>)'
     
-    if re.search(pattern, content, re.DOTALL):
-        updated_content = re.sub(pattern, iframe_code, content, flags=re.DOTALL)
+    if re.search(body_pattern, content, re.IGNORECASE):
+        # Insert the iframe code immediately after the <body> tag opens
+        updated_content = re.sub(body_pattern, f"\\1\n{iframe_code}", content, count=1, flags=re.IGNORECASE)
+        
         with open(HTML_FILE, 'w', encoding='utf-8') as file:
             file.write(updated_content)
-        print(f"Successfully embedded today's Short (ID: {video_id})")
+        print(f"Successfully injected Short (ID: {video_id}) into the fresh HTML file.")
     else:
-        print("Error: Could not find the <!-- YOUTUBE_SHORT_START --> placeholders in NightSummary.html.")
+        print("Error: Could not find a <body> tag in the generated HTML file.")
 
 if __name__ == '__main__':
     target_video_id = find_video_id_by_title()
-    update_html(target_video_id)
+    inject_into_html(target_video_id)
