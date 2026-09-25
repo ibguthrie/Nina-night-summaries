@@ -84,8 +84,7 @@ jobs:
               "</div>\n"
           )
 
-
-          # 5. Target and inject cleanly right above your Session Timeline section header
+          # 6. Target and inject cleanly right above your Session Timeline section header
           timeline_pattern = r'(##\s*Session Timeline)'
 
           if re.search(timeline_pattern, content, re.IGNORECASE):
