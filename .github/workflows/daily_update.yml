@@ -2,9 +2,9 @@ name: Daily YouTube Short Update
 
 on:
   schedule:
-    # Runs everyday at 8:30 AM UTC
+    # Runs at 16:30 UTC (8:30 AM PST / 9:30 AM PDT) to safely clear the 8:00 AM PT creation window
     - cron: '30 16 * * *'
-  workflow_dispatch: # Allows you to force run it manually whenever you want
+  workflow_dispatch: # Lets you trigger it manually anytime via the Actions tab
 
 jobs:
   update-summary:
@@ -13,25 +13,24 @@ jobs:
       contents: write
 
     steps:
-      # Step 1: Get code from your repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-python-version: '3.10'
+          python-version: '3.10'
 
-      # Step 3: Execute the script to modify the HTML file
+      # Explicitly setting the time zone on the GitHub runner ensures Python calculates the "today" string in Pacific Time
       - name: Run Short parser script
+        env:
+          TZ: 'America/Los_Angeles'
         run: python update_short.py
 
-      # Step 4: Commit adjustments back into the repository
       - name: Commit and Push changes
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "github-actions[bot]@://github.com"
           git add NightSummary.html
           git commit -m "Automated update: Embedded latest YouTube Short [skip ci]" || echo "No changes detected"
           git push
