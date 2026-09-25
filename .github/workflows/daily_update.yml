@@ -74,13 +74,13 @@ jobs:
                           print(f"Target Resolved: {vid_title} -> {video_id}")
                           break
                   else:
-                      video_id = matches[0][0]
-                      expected_title = matches[0][1]
-                      print(f"Date variance detected. Using latest upload hook: {expected_title} -> {video_id}")
+                      video_id = matches
+                      expected_title = matches
+                      print(f"Date variance detected. Using latest upload fallback: {expected_title} -> {video_id}")
           except Exception as e:
               print(f"Scraping encounter error: {e}. Utilizing backup verification anchor ID.")
 
-          # Generate the clean iframe layout container using native HTML block dimensions
+          # Generate the clean iframe layout container matching your exact Markdown page style layout
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px auto; display: block;\">\n"
@@ -93,12 +93,12 @@ jobs:
           content = re.sub(r'<div align="center".*?</iframe>.*?</div>', '', content, flags=re.DOTALL | re.IGNORECASE)
           content = re.sub(r'<iframe width="500".*?</iframe>', '', content, flags=re.IGNORECASE)
 
-          # Find your primary document header and inject right beneath it
-          top_title_pattern = r'(#\s+Night\s+Summary\s+Report\s*\n)'
+          # CRITICAL ACCURACY FIX: Targets the exact `# Night Summary Report` title block syntax used by N.I.N.A
+          top_title_pattern = r'(#\s+Night\s+Summary\s+Report)'
 
           if re.search(top_title_pattern, content, re.IGNORECASE):
-              content = re.sub(top_title_pattern, f"\\1{iframe_markdown}", content, count=1, flags=re.IGNORECASE)
-              print("Success: Video embedded cleanly at the top of the summary page report.")
+              content = re.sub(top_title_pattern, f"\\1\n{iframe_markdown}", content, count=1, flags=re.IGNORECASE)
+              print("Success: Video embedded cleanly at the top of your report file summary layout.")
           else:
               timeline_pattern = r'(##\s*Session Timeline)'
               if re.search(timeline_pattern, content, re.IGNORECASE):
@@ -106,6 +106,7 @@ jobs:
                   print("Fallback: Embedded video above Session Timeline layout.")
               else:
                   content += f"\n{iframe_markdown}"
+                  print("Warning: Missing all layout indicators. Attached video container to page footer.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
@@ -131,14 +132,14 @@ jobs:
   deploy-summary:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    # Explicit permissions granted uniquely to this deployment stage pipeline
+      url: \${{ steps.deployment.outputs.page_url }}
     permissions:
       pages: write
       id-token: write
     runs-on: ubuntu-latest
     needs: build-summary
     steps:
+      # Upgraded to v4 to completely remove Node.js 20 deprecation log messages from your dashboard panel
       - name: Force Instant Live Update to GitHub Pages Website URL
         id: deployment
         uses: actions/deploy-pages@v4
