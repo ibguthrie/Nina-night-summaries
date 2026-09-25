@@ -32,26 +32,34 @@ jobs:
           import os
           from datetime import datetime
 
-          # 1. Configuration using your public channel handle
-          HANDLE = 'bguthrie' 
+          # 1. Direct System Configuration
+          CHANNEL_ID = 'UCf-B3Rnd2W_vHn2_iRbe_9A' 
           HTML_FILE = 'NightSummary.html'
-          FEED_URL = f'https://youtube.com{HANDLE}'
+          FEED_URL = f'https://youtube.com{CHANNEL_ID}'
 
-          # 2. Match your daily timestamp sequence in Pacific Time
-          today_str = datetime.now().strftime('%Y-%m-%d')
-          expected_title = f"Death Valley Observatory Timelapse {today_str}"
-          print(f"Searching YouTube feed for: '{expected_title}'")
-
-          # 3. Test verification check for local staging environments
           if not os.path.exists(HTML_FILE):
-              print(f"Notice: '{HTML_FILE}' was not discovered in workspace path. Dropping structural stub for testing.")
-              with open(HTML_FILE, 'w', encoding='utf-8') as f:
-                  f.write("<h1>Mock Analytics Summary</h1>\n<h2>Session Timeline</h2>\n<p>Data blocks.</p>")
+              print(f"CRITICAL ERROR: '{HTML_FILE}' was not found in workspace.")
+              exit(0)
 
-          # 4. Fetch public RSS upload stream
+          with open(HTML_FILE, 'r', encoding='utf-8') as file:
+              content = file.read()
+
+          # 2. Extract Session Date from N.I.N.A HTML layout metadata string
+          date_match = re.search(r'\*\*Session Date:\*\*\s*([0-9]{4}-[0-9]{2}-[0-9]{2})', content)
+          
+          if date_match:
+              session_date = date_match.group(1)
+              print(f"Parsed Session Date from HTML: '{session_date}'")
+          else:
+              session_date = datetime.now().strftime('%Y-%m-%d')
+              print(f"Warning: Using system clock date fallback: '{session_date}'")
+
+          expected_title = f"Death Valley Observatory Timelapse {session_date}"
+          print(f"Searching official feed for video matching: '{expected_title}'")
+
+          # 3. Pull XML Data Feed 
           video_id = None
           try:
-              # Set headers to prevent generic bot-blocking codes
               req = urllib.request.Request(FEED_URL, headers={'User-Agent': 'Mozilla/5.0'})
               with urllib.request.urlopen(req) as response:
                   root = ET.fromstring(response.read())
@@ -67,25 +75,15 @@ jobs:
                       video_id = entry.find('yt:videoId', namespaces).text
                       break
           except Exception as e:
-              print(f"Error checking YouTube feed: {e}")
-              # Fallback try using handle schema variant if baseline user request fails
-              try:
-                  ALT_FEED_URL = f'https://youtube.com{HANDLE}'
-                  print(f"Attempting fallback stream address: {ALT_FEED_URL}")
-              except:
-                  pass
+              print(f"Error checking YouTube feed stream index: {e}")
 
-          # 5. Modify and inject code if the title matches
+          # 4. Modify and inject code if the title matches
           if video_id:
-              print(f"Target short found! Video ID resolved to: {video_id}")
+              print(f"Target video found! Video ID resolved to: {video_id}")
               
-              # Square layout optimized for desktop (500x500) and responsive on smaller displays
+              # Square layout optimized for desktop and fluid responsive mobile views
               iframe_code = f'\n    <!-- Automated YouTube Square Video Insertion -->\n    <div style="display: flex; justify-content: center; margin: 20px 0;">\n        <iframe width="500" height="500" src="https://youtube.com{video_id}" title="{expected_title}" frameborder="0" style="max-width: 100%; aspect-ratio: 1 / 1;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n    </div>'
               
-              with open(HTML_FILE, 'r', encoding='utf-8') as file:
-                  content = file.read()
-              
-              # Precision filters matching Session Timeline headers or text divs
               timeline_pattern = r'(<[^>]+>[^<]*Session Timeline[^<]*</[^>]+>)'
               raw_text_pattern = r'(Session Timeline)'
 
@@ -97,12 +95,12 @@ jobs:
                   print("Success: Video embedded directly above the 'Session Timeline' plain text snippet.")
               else:
                   content += f"\n{iframe_code}"
-                  print("Warning: Target phrase missed. Video appended cleanly to bottom of code body.")
+                  print("Warning: Target header text missed. Video appended cleanly to bottom of code body.")
 
               with open(HTML_FILE, 'w', encoding='utf-8') as file:
                   file.write(content)
           else:
-              print("Notice: No upload with today's date structure found in stream index yet.")
+              print(f"Notice: No upload with title variant matching '{expected_title}' found in stream index.")
           EOF
           python inline_run.py
 
