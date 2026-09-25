@@ -66,22 +66,22 @@ jobs:
                               print(f"Direct Match Resolved: {v_title} -> {video_id}")
                               break
                       else:
-                          video_id = video_blocks
-                          expected_title = video_blocks
+                          video_id = video_blocks[0][0]
+                          expected_title = video_blocks[0][1]
                           print(f"Date variance detected. Using latest upload hook: {expected_title} -> {video_id}")
           except Exception as e:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
 
           # 4. Generate the dynamic embedded player frame with the requested text header banner
-          iframe_code = f"""
-    <!-- Automated YouTube Square Video Insertion -->
-    <div style="text-align: center; margin: 30px auto; max-width: 500px; font-family: system-ui, -apple-system, sans-serif;">
-        <h2 style="margin-bottom: 15px; font-size: 1.5rem; font-weight: 600; color: inherit;">🌌 Last Night's All-Sky Timelapse View</h2>
-        <div style="position: relative; width: 100%; aspect-ratio: 1 / 1;">
-            <iframe width="500" height="500" src="https://youtube.com{video_id}" title="{expected_title}" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; max-width: 100%; aspect-ratio: 1 / 1;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        </div>
-    </div>
-"""
+          iframe_code = (
+              "\n    <!-- Automated YouTube Square Video Insertion -->\n"
+              "    <div style=\"text-align: center; margin: 30px auto; max-width: 500px; font-family: system-ui, -apple-system, sans-serif;\">\n"
+              "        <h2 style=\"margin-bottom: 15px; font-size: 1.5rem; font-weight: 600; color: inherit;\">🌌 Last Night's All-Sky Timelapse View</h2>\n"
+              "        <div style=\"position: relative; width: 100%; aspect-ratio: 1 / 1;\">\n"
+             f"            <iframe width=\"500\" height=\"500\" src=\"https://youtube.com{video_id}\" title=\"{expected_title}\" frameborder=\"0\" style=\"position: absolute; top: 0; left: 0; width: 100%; height: 100%; max-width: 100%; aspect-ratio: 1 / 1;\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
+              "        </div>\n"
+              "    </div>\n"
+          )
 
           # 5. Inject directly above 'Session Timeline'
           timeline_pattern = r'(<[^>]+>[^<]*Session Timeline[^<]*</[^>]+>)'
