@@ -21,11 +21,10 @@ jobs:
         with:
           python-version: '3.10'
 
+      # Standard external run call removes script block freezes completely
       - name: Execute Clean Media Injector
-        env:
-          TZ: 'America/Los_Angeles'
+        shell: python
         run: |
-          cat << 'EOF' > inline_run.py
           import urllib.request
           import re
           import os
@@ -75,7 +74,7 @@ jobs:
           except Exception as e:
               print(f"Network stream skipped: {e}. Utilizing backup verification anchor ID.")
 
-          # 4. Generate the video player using rigid, cross-compatible HTML layout structures (YOUR WORKING PLAYER VERBATIM)
+          # 4. Generate the video player using rigid structures (YOUR WORKING PLAYER VERBATIM)
           iframe_markdown = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               "<div align=\"center\" style=\"margin: 25px 0;\">\n"
@@ -100,13 +99,11 @@ jobs:
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
-          EOF
-          python inline_run.py
 
       - name: Commit and Push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@://github.com"
           git add NightSummary/NightSummary.html
-          git commit -m "Automated update: Positioned video right above Session Timeline [skip ci]" || echo "No changes detected"
+          git commit -m "Automated update: Fixed link parameters and embedded active video player frame" || echo "No changes detected"
           git push
