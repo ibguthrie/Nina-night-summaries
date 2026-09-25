@@ -74,23 +74,27 @@ jobs:
           except Exception as e:
               print(f"Scraping encounter error: {e}. Utilizing backup verification anchor ID.")
 
-          # PURE MARKDOWN IMAGE LINK CARD LAYOUT: Completely bypasses HTML iframe blocking
-          # FIXED URL PATH STRUCTURE: Uses standard formatted slashes to prevent empty image boxes
+          # 3. FIXED URL PATH STRUCTURE: Hard-codes the exact, complete, working video link elements
           markdown_card = (
               "\n## 🌌 Last Night's All-Sky Timelapse View\n\n"
               f"[![{expected_title}](https://youtube.com{video_id}/hqdefault.jpg)](https://youtube.com{video_id})\n"
               f"\n*{expected_title} (Click image above to play video)*\n"
           )
 
-          # 3. COMPLETE GLOBAL SCRUB CLEANUP: Wipes out ALL duplicate text strings anywhere in the document
-          content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View.*?\n', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'\[Death Valley.*?\]\(https.*?\)\n*', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'\[Death Valley.*?\]https.*?\n*', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'\*Death Valley Observatory.*?\*\n*', '', content, flags=re.IGNORECASE)
-          content = re.sub(r'<div align="center".*?</iframe>.*?</div>\n*', '', content, flags=re.DOTALL | re.IGNORECASE)
-          content = re.sub(r'<iframe width="500".*?</iframe>\n*', '', content, flags=re.IGNORECASE)
+          # 4. DEEP SCRUB SANITIZATION: Aggressively searches and destroys ALL broken fragments from top to bottom
+          lines = content.split('\n')
+          cleaned_lines = []
+          for line in lines:
+              # Skip any lines that contain previous broken test attempts or tags
+              if "Timelapse" in line or "BhRsO0U6-r0" in line or "Last Night's All-Sky" in line or "youtube.com" in line:
+                  continue
+              cleaned_lines.append(line)
+          content = '\n'.join(cleaned_lines)
 
-          # 4. BROAD KEYWORD TARGETING: Searches for the main literal header text title phrase used by N.I.N.A
+          # Double-check strip of any empty title headers left sitting alone
+          content = re.sub(r'##\s*🌌\s*Last Night\'s All-Sky Timelapse View\s*\n*', '', content, flags=re.IGNORECASE)
+
+          # 5. BROAD KEYWORD TARGETING: Inserts right beneath your main "# Night Summary Report" banner text
           keyword_pattern = r'(#\s+Night\s+Summary\s+Report)'
 
           if re.search(keyword_pattern, content, re.IGNORECASE):
@@ -103,7 +107,6 @@ jobs:
                   print("Fallback: Positioned video card directly above the Session Timeline header.")
               else:
                   content = markdown_card + content
-                  print("Absolute Fallback: Prefixed link block container to top line of document.")
 
           with open(HTML_FILE, 'w', encoding='utf-8') as file:
               file.write(content)
