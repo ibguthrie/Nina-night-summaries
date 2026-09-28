@@ -24,10 +24,10 @@ video_id = data["items"][0]["id"]["videoId"]
 video_title = data["items"][0]["snippet"]["title"]
 print(f"Latest Short: {video_title} ({video_id})")
 
-# 2. Build the embed iframe
+# 2. Build the embed iframe (tagged with an id for easy identification/removal)
 embed_html = f"""
-<div style="text-align:center; margin: 20px 0;">
-  <iframe width="560" height="560"
+<div id="yt-short-embed" style="text-align:center; margin: 20px 0;">
+  <iframe width="700" height="700"
     src="https://www.youtube.com/embed/{video_id}"
     title="{video_title}"
     frameborder="0"
@@ -42,7 +42,13 @@ html_path = "NightSummary/NightSummary.html"
 with open(html_path, "r", encoding="utf-8") as f:
     soup = BeautifulSoup(f.read(), "html.parser")
 
-# 4. Find "Session Timeline"
+# 4. Safety net: remove any existing embed before inserting a new one
+old_embed = soup.find("div", id="yt-short-embed")
+if old_embed:
+    print("Found an existing embed, removing it before inserting the new one.")
+    old_embed.decompose()
+
+# 5. Find "Session Timeline"
 target = soup.find(string=lambda text: text and "Session Timeline" in text)
 if not target:
     raise ValueError("Could not find 'Session Timeline' in the HTML")
@@ -54,11 +60,11 @@ while parent and parent.name in ["span", "a", "strong", "em", "b", "i"]:
 if not parent:
     raise ValueError("Could not find a suitable parent element for insertion")
 
-# 5. Inject the embed
+# 6. Inject the embed
 embed_soup = BeautifulSoup(embed_html, "html.parser")
 parent.insert_before(embed_soup)
 
-# 6. Write it back, in place, before git ever sees it
+# 7. Write it back, in place, before git ever sees it
 with open(html_path, "w", encoding="utf-8") as f:
     f.write(str(soup))
 
