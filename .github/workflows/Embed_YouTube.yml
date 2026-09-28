@@ -1,0 +1,104 @@
+name: Embed Latest YouTube Short into HTML
+
+on:
+  schedule:
+    - cron: '20 15 * * *'  # 3pm UTC = ~8am PT, safely after dawn
+  workflow_dispatch:        # Also allows manual trigger
+
+jobs:
+  embed-video:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Fetch latest Short and inject into HTML
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          CHANNEL_ID: "UCw8HtgLPR8gpic_BlYpHigA"
+        run: |
+          python3 - <<'EOF'
+          import os
+          import requests
+          from bs4 import BeautifulSoup
+
+          api_key = os.environ["YOUTUBE_API_KEY"]
+          channel_id = os.environ["CHANNEL_ID"]
+
+          # 1. Fetch the latest Short from the channel
+          search_url = "https://www.googleapis.com/youtube/v3/search"
+          params = {
+              "key": api_key,
+              "channelId": channel_id,
+              "part": "snippet",
+              "order": "date",
+              "type": "video",
+              "videoDuration": "short",
+              "maxResults": 1
+          }
+          response = requests.get(search_url, params=params)
+          response.raise_for_status()
+          data = response.json()
+
+          video_id = data["items"][0]["id"]["videoId"]
+          video_title = data["items"][0]["snippet"]["title"]
+          print(f"Latest Short: {video_title} ({video_id})")
+
+          # 2. Build the embed iframe
+          embed_html = f"""
+          <div style="text-align:center; margin: 20px 0;">
+            <iframe width="560" height="560"
+              src="https://www.youtube.com/embed/{video_id}"
+              title="{video_title}"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen>
+            </iframe>
+          </div>
+          """
+
+          # 3. Load the fixed HTML file
+          html_path = "NightSummary/NightSummary.html"
+          with open(html_path, "r", encoding="utf-8") as f:
+              soup = BeautifulSoup(f.read(), "html.parser")
+
+          # 4. Find "Session Timeline" regardless of which element contains it
+          target = soup.find(string=lambda text: text and "Session Timeline" in text)
+          if not target:
+              raise ValueError("Could not find 'Session Timeline' in the HTML")
+
+          # Walk up to find a block-level parent to insert before
+          parent = target.find_parent()
+          while parent and parent.name in ["span", "a", "strong", "em", "b", "i"]:
+              parent = parent.find_parent()
+
+          if not parent:
+              raise ValueError("Could not find a suitable parent element for insertion")
+
+          # 5. Inject the embed immediately before "Session Timeline"
+          embed_soup = BeautifulSoup(embed_html, "html.parser")
+          parent.insert_before(embed_soup)
+
+          # 6. Write the updated HTML back
+          with open(html_path, "w", encoding="utf-8") as f:
+              f.write(str(soup))
+
+          print(f"Successfully injected video into {html_path}")
+          EOF
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add NightSummary/NightSummary.html
+          git diff --cached --quiet || git commit -m "Auto-embed latest YouTube Short"
+          git push
