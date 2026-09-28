@@ -27,7 +27,7 @@ print(f"Latest Short: {video_title} ({video_id})")
 # 2. Build the embed iframe (tagged with an id for easy identification/removal)
 embed_html = f"""
 <div id="yt-short-embed" style="text-align:center; margin: 20px 0;">
-  <iframe width="700" height="700"
+  <iframe width="800" height="800"
     src="https://www.youtube.com/embed/{video_id}"
     title="{video_title}"
     frameborder="0"
